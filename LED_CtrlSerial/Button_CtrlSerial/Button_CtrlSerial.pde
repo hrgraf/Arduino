@@ -6,14 +6,18 @@
 
 import processing.serial.*;
 
-Serial myPort;  // Create object from Serial class
+// Open whatever port is the one you're using.
+String portName = 
+  //Serial.list()[0];
+  //"/dev/ttyACM0"; 
+  "COM6";
+
+Serial port;  // Create object from Serial class
 
 void setup() 
 {
   size(200, 200);
-  // Open whatever port is the one you're using.
-  String portName = "/dev/ttyACM0"; //Serial.list()[0];
-  myPort = new Serial(this, portName, 115200);
+  port = new Serial(this, portName, 115200);
 }
 
 void draw() 
@@ -22,18 +26,19 @@ void draw()
   if (mouseOverRect() == true) 
   {
     fill(204);                      // change color and
-    myPort.write('1');              // send an H to indicate mouse is over square
+    port.write('1');              // send an H to indicate mouse is over square
   } 
   else 
   {
     fill(0);                      // change color and
-    myPort.write('0');              // send an L otherwise
+    port.write('0');              // send an L otherwise
   }
   
   rect(50, 50, 100, 100);         // Draw a square
 }
 
+// Test if mouse is over square
 boolean mouseOverRect() 
-{ // Test if mouse is over square
+{ 
   return ((mouseX >= 50) && (mouseX <= 150) && (mouseY >= 50) && (mouseY <= 150));
 }
