@@ -1,8 +1,11 @@
 {
 	"folders": [
-		{
-			"path": "Blink"
-		}
+        {
+            "path": "Blink"
+        },
+        {
+            "path": "LED_CtrlSerial"
+        }
     ],
     "settings": {}
 }
