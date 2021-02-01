@@ -5,6 +5,9 @@
         },
         {
             "path": "LED_CtrlSerial"
+        },
+        {
+            "path": "IR_Remote"
         }
     ],
     "settings": {}
