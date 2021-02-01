@@ -8,6 +8,9 @@
         },
         {
             "path": "IR_Remote"
+        },
+        {
+            "path": "MidiTest"
         }
     ],
     "settings": {}
