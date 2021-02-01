@@ -1,7 +1,8 @@
 /**
  * Blink the LED
  */
-#include "Arduino.h"
+
+#include "Arduino.h" // for Intellisense
 
 // Set LED_BUILTIN if it is not defined by Arduino framework
 // #define LED_BUILTIN 13

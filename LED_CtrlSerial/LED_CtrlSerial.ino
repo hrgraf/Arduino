@@ -7,6 +7,8 @@
     echo "0" > /dev/ttyACM0
  */
 
+#include "Arduino.h" // for Intellisense
+
 const int ledPin = LED_BUILTIN;
 
 void setup()
