@@ -10,7 +10,7 @@
             "path": "IR_Remote"
         },
         {
-            "path": "MidiTest"
+            "path": "MIDI_Test"
         }
     ],
     "settings": {}
