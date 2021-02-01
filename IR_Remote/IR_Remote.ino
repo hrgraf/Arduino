@@ -27,7 +27,11 @@ void loop()
 {
   if (irrecv.decode(&results)) 
   {
-    if ((results.decode_type == NEC) && (results.value != -1)) 
+    if (! results.bits)
+    {
+      Serial.println("???"); // decoded nothing
+    }
+    else if (results.decode_type == NEC)
     {
       char *str="unknown";
       Serial.print("NEC: ");
