@@ -1,5 +1,5 @@
 /**
- * Blink the LED
+ * Blink an LED, the classic test to check HW/SW setup.
  */
 
 #include "Arduino.h" // for Intellisense

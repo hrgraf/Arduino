@@ -1,4 +1,6 @@
 /**
+ * IR Remote Control Test by H.R.Graf
+ * 
  * Decode a NEC InfraRed Remote Control with an Arduino, 
  * by wiring an TSOP38238 to Pin 2.
  */
@@ -6,7 +8,7 @@
 #include <Arduino.h> // for Intellisense
 #include <IRremote.h>
 
-int RECV_PIN = 2;
+const int RECV_PIN = 2;
 
 IRrecv irrecv(RECV_PIN);
 

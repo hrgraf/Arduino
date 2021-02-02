@@ -1,3 +1,3 @@
 # Blink
 
-The classic Arduino test.
+Blink an LED, the classic test to check HW/SW setup.
