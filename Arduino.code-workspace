@@ -11,6 +11,9 @@
         },
         {
             "path": "MIDI_Test"
+        },
+        {
+            "path": "Synth"
         }
     ],
     "settings": {}
