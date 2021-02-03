@@ -121,7 +121,7 @@ void loop()
 
   Serial.println("Triangle");
   for (int i=0; i<WAVE_LEN; i++)
-    wave[i] = (i < WAVE_LEN/2) ? (2*i) : (512-2*i);
+    wave[i] = (i < WAVE_LEN/2) ? (2*i) : (511-2*i);
   dumpWave();
   delay(2000);
 
