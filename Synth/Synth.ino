@@ -20,11 +20,14 @@
 #define C5  523
 
 #define MELODY_LEN 8
-const int melody[MELODY_LEN] = { C4, D4, E4, F4, G4, A4, H4, C5 };
+static const int melody[MELODY_LEN] = { C4, D4, E4, F4, G4, A4, H4, C5 };
 
-#define WAVE_LEN 256 // do not changle
+#define WAVE_LEN 256
 static byte wave[WAVE_LEN];
 static byte sine[WAVE_LEN];
+
+static const int OFFS = 16;
+static const int AMP  = 255-OFFS;
 
 static const byte rom[WAVE_LEN] __ATTR_PROGMEM__ = 
 {     
@@ -74,7 +77,7 @@ void setup()
 
   // create sine wave table
   for (int i=0; i<WAVE_LEN; i++)
-    sine[i] = int(127 - 127*cos(TWO_PI/WAVE_LEN*i));
+    sine[i] = round(0.5*(AMP - AMP*cos(TWO_PI/WAVE_LEN*i))) + OFFS;
 
   // Set timer1 for 8-bit fast PWM output
   pinMode(PIN_OUT, OUTPUT);
@@ -88,7 +91,7 @@ void setup()
   TCCR2B = (1 << CS21); // Set prescaler to divide by 8
   TIMSK2 = (1 << OCIE2A); // Call ISR when TCNT2 = OCRA2
   OCR2A = 18; // Set frequency of generated wave (2MHz/256/18=434Hz)
- 
+  
   // Enable interrupts to generate waveform!
   sei(); 
 }
@@ -101,27 +104,27 @@ void loop()
   dumpWave();
   delay(2000);
 
-  Serial.println("Ramp");
-  for (int i=0; i<WAVE_LEN; i++)
-    wave[i] = i;
-  dumpWave();
-  delay(2000);
-
   Serial.println("Square");
   for (int i=0; i<WAVE_LEN; i++)
-    wave[i] = (i < WAVE_LEN/2) ? 0 : 255;
+    wave[i] = (i < WAVE_LEN/2) ? OFFS : (OFFS+AMP);
   dumpWave();
   delay(2000);
 
   Serial.println("Pulse");
   for (int i=0; i<WAVE_LEN; i++)
-    wave[i] = (i < WAVE_LEN*3/4) ? 0 : 255;
+    wave[i] = (i < WAVE_LEN*3/4) ? OFFS : (OFFS+AMP);
+  dumpWave();
+  delay(2000);
+
+  Serial.println("Ramp");
+  for (int i=0; i<WAVE_LEN; i++)
+    wave[i] = i*AMP/WAVE_LEN + OFFS;
   dumpWave();
   delay(2000);
 
   Serial.println("Triangle");
   for (int i=0; i<WAVE_LEN; i++)
-    wave[i] = (i < WAVE_LEN/2) ? (2*i) : (511-2*i);
+    wave[i] = ((i < WAVE_LEN/2) ? (2*i*AMP)/WAVE_LEN : (2*AMP-2*i*AMP/WAVE_LEN)) + OFFS;
   dumpWave();
   delay(2000);
 
