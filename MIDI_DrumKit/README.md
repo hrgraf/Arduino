@@ -2,6 +2,10 @@
 
 Piezo to MIDI
 
+![alt text](piezo.jpg "Piezo")
+
+![alt text](wiring.png "Wiring")
+
 MIDI out either direct at 31250 baud over the serial interface, 
 or over USB as virtual COM port at 115200 baud.
 

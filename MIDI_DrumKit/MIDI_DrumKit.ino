@@ -74,13 +74,13 @@ void loop()
     static int buf[BUF_LEN];
 
     int val = analogRead(A0);
-    long now = micros();
+    unsigned long now = micros();
     //DEBUG(val);
     //DEBUG("\n");
 
     if (val >= THRESHOLD)
     {
-        long start = now;
+        unsigned long start = now;
         buf[0] = val;
         for (int i=1; i<BUF_LEN; i++)
         {
@@ -93,18 +93,46 @@ void loop()
         }
 
         DEBUG("Triggered:\n");
+        int pos = 0, max = 0, sum = 0, len = 0;
         for (int i=0; i<BUF_LEN; i++)
         {
             DEBUG(i+1);
             DEBUG("\t");
             DEBUG(buf[i]);
             DEBUG("\n");
+
+            if (buf[i] >= THRESHOLD)
+                len = i;
+            sum += buf[i];
+            if (max < buf[i])
+            {
+                max = buf[i];
+                pos = i;
+            }
         }
+        unsigned long step_us = (now-start)/(BUF_LEN-1);
+
         DEBUG("Recorded ");
         DEBUG((500+now-start)/1000);
         DEBUG("ms with steps of ");
-        DEBUG((now-start)/(BUF_LEN-1));
-        DEBUG("us\n");
+        DEBUG(step_us);
+        DEBUG("us. ");
+
+        DEBUG("Energy of ");
+        DEBUG(sum);
+        DEBUG(" with length ");
+        DEBUG(len);
+        DEBUG(" (");
+        DEBUG((len*step_us+500)/1000);
+        DEBUG("ms) and peak of ");
+        DEBUG(max);
+        DEBUG(" (vs. ");
+        DEBUG(buf[0]);
+        DEBUG(") at ");
+        DEBUG(pos);
+        DEBUG(" (");
+        DEBUG(pos*step_us);
+        DEBUG("us)\n");
     }
 }
 
