@@ -22,7 +22,15 @@
 
 #define MIDI_CHANNEL  0x09 // GM Percussion on channel 10
 #define MIDI_NOTEON   0x90
-#define MIDI_KEY        38 // GM acoustic snare
+#define MIDI_KEY      MIDI_SNARE
+
+// MT Power Drum Kit (VST DrumKit)
+#define MIDI_KICK       36
+#define MIDI_SNARE      38
+#define MIDI_TOM_LOW    41
+#define MIDI_TOM_MID    45
+#define MIDI_TOM_HI     48
+#define MIDI_HI_HAT     46
 
 #ifdef NO_MIDI // Debug
   #define BAUD_RATE 115200
@@ -164,7 +172,10 @@ void loop()
 //          DEBUG(max);
 //          DEBUG("\n");
 
-            val = (max - THRESHOLD) / 4 + 32; // add compression/offset
+            // map to 1..127 with optional compression/offset
+            //val = max / 8;
+            //val = (max - THRESHOLD) / 4 + 32;
+            val = max / 2;
             if (val > 127)
                 val = 127;
             if (val < 1)
