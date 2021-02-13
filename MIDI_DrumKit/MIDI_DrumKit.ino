@@ -1,53 +1,52 @@
 /**
  * Arduino MIDI DrumKit by H.R.Graf
  *
- * Works out-of-the-box on Arduino Uno / Leonardo compatible boards.
- * No MIDI DIN circuit needed, as MIDI events are sent/received over USB.
+ * Piezo to MIDI
  *
- * Piezo -> MIDI
- *
- * On the Arduino Uno, the serial interface is used to send MIDI over USB
- * at 115200 baud. On the host (PC), the USB communication is accessible 
+ * MIDI out either direct at 31250 baud over the serial interface, 
+ * or over USB as virtual COM port at 115200 baud.
+ * 
+ * On the host (PC), the MIDI communication over USB is accessible 
  * as virtual COM port. There, some additional SW is required to translate 
  * between UART and MIDI. The baud rate of 115200 is compatible to both
  * - Hairless MIDI to Serial Bridge
  * - my pizmidi/midiUartBridge (recommended!)
  *
- * On the Arduino Leonardo, the USB MIDI functionality is built-in and the 
- * serial interface is available for serial monitor / debug messages.
- * No additional drivers needed on the host (PC) side.
+ * For debug purposes, define NO_MIDI, to have debug messages instead of MIDI output.
  */
 
 #include <Arduino.h> // for Intellisense
 
-#define NO_MIDI // comment out for MIDI Output
+//#define NO_MIDI // comment out for MIDI Output
+//#define DEBUG_PIEZO // comment out for piezo data logger
 
-#define MIDI_CHANNEL  0x0A
+#define MIDI_CHANNEL  0x09 // GM Percussion on channel 10
 #define MIDI_NOTEON   0x90
+#define MIDI_KEY        38 // GM acoustic snare
 
 #ifdef NO_MIDI // Debug
   #define BAUD_RATE 115200
   #define DEBUG(x) Serial.print(x)
   #define SEND_MIDI(x)
 #else 
-//#define BAUD_RATE  31250 // MIDI DIN-5 Output
+//#define BAUD_RATE  31250 // MIDI HW Output
   #define BAUD_RATE 115200 // USB <-> UART <-> MIDI
   #define DEBUG(x)
   #define SEND_MIDI(x) Serial.write(x)
 #endif
 
-#define THRESHOLD 10
+#define THRESHOLD 16
 #define BUF_LEN  500
 
 // -----------------------------------------------------------------------------
 
-static void sendNoteOn(byte channel, byte key, byte velocity)
+void sendNoteOn(byte key, byte velocity)
 {
     digitalWrite(LED_BUILTIN, velocity ? HIGH : LOW);
 
     SEND_MIDI(MIDI_NOTEON | MIDI_CHANNEL);
-    SEND_MIDI(key);
-    SEND_MIDI(velocity);
+    SEND_MIDI(key      & 0x7F);
+    SEND_MIDI(velocity & 0x7F);
 
     DEBUG("NoteOn: ");
     DEBUG(key);
@@ -68,6 +67,11 @@ void setup()
 
     DEBUG("Ready\n");
 }
+
+// -----------------------------------------------------------------------------
+// Debug loop
+
+#ifdef DEBUG_PIEZO
 
 void loop()
 {
@@ -135,5 +139,60 @@ void loop()
         DEBUG("us)\n");
     }
 }
+
+#else
+
+// -----------------------------------------------------------------------------
+// Main loop
+
+void loop()
+{
+    static unsigned long t_on=0, t_off=0; // in us
+    static int max;
+
+    int val = analogRead(A0);
+    unsigned long now = micros();
+
+    if (t_on)
+    {
+        if (max < val)
+            max = val;
+
+        if (now >= t_on)
+        {
+//          DEBUG("Hit: ");
+//          DEBUG(max);
+//          DEBUG("\n");
+
+            val = (max - THRESHOLD) / 4 + 32; // add compression/offset
+            if (val > 127)
+                val = 127;
+            if (val < 1)
+                val = 1;
+            sendNoteOn(MIDI_KEY, val);
+            t_on = 0;
+        }
+    }
+    else if (t_off)
+    {
+        if (now >= t_off)
+        {
+            sendNoteOn(MIDI_KEY, 0); // off
+            t_off = 0;
+        }
+    }
+    else
+    {
+        if (val >= THRESHOLD)
+        {
+            max = val;
+            t_on  = now +  1000;
+            t_off = now + 50000;
+        }
+    }
+
+}
+
+#endif
 
 // -----------------------------------------------------------------------------
