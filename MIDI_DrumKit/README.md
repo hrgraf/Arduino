@@ -20,4 +20,5 @@ between UART and MIDI. The baud rate of 115200 is compatible to both
   - Hairless MIDI to Serial Bridge
   - [my pizmidi/midiUartBridge (recommended!)](https://github.com/hrgraf/pizmidi)
 
-For a good VST Drum Kit, I recommend the free MT Power Drum Kit.
+For a good VST Drum Kit, I recommend the free MT Power Drum Kit:
+![alt text](mt_power_drumkit.jpg "VST Drum Kit")
