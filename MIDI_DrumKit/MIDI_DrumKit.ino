@@ -22,7 +22,6 @@
 
 #define MIDI_CHANNEL  0x09 // GM Percussion on channel 10
 #define MIDI_NOTEON   0x90
-#define MIDI_KEY      MIDI_SNARE
 
 // MT Power Drum Kit (VST DrumKit)
 #define MIDI_KICK       36
@@ -36,6 +35,7 @@
   #define BAUD_RATE 115200
   #define DEBUG(x) Serial.print(x)
   #define SEND_MIDI(x)
+  #define BUF_LEN  500
 #else 
 //#define BAUD_RATE  31250 // MIDI HW Output
   #define BAUD_RATE 115200 // USB <-> UART <-> MIDI
@@ -44,7 +44,25 @@
 #endif
 
 #define THRESHOLD 16
-#define BUF_LEN  500
+
+typedef struct
+{
+    int8_t   pin; // Arduino pin
+    uint8_t  key; // MIDI key
+    int16_t  max; // 10-bit ADC value
+    uint32_t t_on, t_off; // in us
+} piezo_t;
+
+// piezo configuration
+static piezo_t piezo[] =
+{
+    { A0, MIDI_HI_HAT,  0, 0, 0 },
+    { A1, MIDI_SNARE,   0, 0, 0 },
+    { A2, MIDI_TOM_MID, 0, 0, 0 },
+    { A3, MIDI_TOM_HI,  0, 0, 0 },
+    { A4, MIDI_KICK,    0, 0, 0 },
+    { -1, 0,            0, 0, 0 } // terminator
+};
 
 // -----------------------------------------------------------------------------
 
@@ -155,53 +173,56 @@ void loop()
 
 void loop()
 {
-    static unsigned long t_on=0, t_off=0; // in us
-    static int max;
+    piezo_t *p = piezo;
 
-    int val = analogRead(A0);
-    unsigned long now = micros();
-
-    if (t_on)
+    while (p->pin >= 0)
     {
-        if (max < val)
-            max = val;
+        int16_t  val = analogRead(p->pin);
+        uint32_t now = micros();
 
-        if (now >= t_on)
+        if (p->t_on) // started
         {
-//          DEBUG("Hit: ");
-//          DEBUG(max);
-//          DEBUG("\n");
+            if (p->max < val)
+                p->max = val;
 
-            // map to 1..127 with optional compression/offset
-            //val = max / 8;
-            //val = (max - THRESHOLD) / 4 + 32;
-            val = max / 2;
-            if (val > 127)
-                val = 127;
-            if (val < 1)
-                val = 1;
-            sendNoteOn(MIDI_KEY, val);
-            t_on = 0;
-        }
-    }
-    else if (t_off)
-    {
-        if (now >= t_off)
-        {
-            sendNoteOn(MIDI_KEY, 0); // off
-            t_off = 0;
-        }
-    }
-    else
-    {
-        if (val >= THRESHOLD)
-        {
-            max = val;
-            t_on  = now +  1000;
-            t_off = now + 50000;
-        }
-    }
+            if (now >= p->t_on)
+            {
+//              DEBUG("Hit: ");
+//              DEBUG(p->max);
+//              DEBUG("\n");
 
+                // map to 1..127 with optional compression/offset
+                //val = p->max / 8;
+                //val = (p->max - THRESHOLD) / 4 + 32;
+                val = p->max / 2;
+                if (val > 127)
+                    val = 127;
+                if (val < 1)
+                    val = 1;
+                sendNoteOn(p->key, val);
+                p->t_on = 0;
+            }
+        }
+        else if (p->t_off) // not stopped yet
+        {
+            if (now >= p->t_off)
+            {
+                sendNoteOn(p->key, 0); // off
+                p->t_off = 0;
+            }
+        }
+        else // no activity
+        {
+            if (val >= THRESHOLD)
+            {
+                p->max   = val;
+                p->t_on  = now +  1000;
+                p->t_off = now + 50000;
+            }
+        }
+
+        p++; // next piezo
+    }
 }
 
 #endif
