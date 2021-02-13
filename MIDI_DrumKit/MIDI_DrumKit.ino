@@ -61,6 +61,7 @@ static piezo_t piezo[] =
     { A2, MIDI_TOM_MID, 0, 0, 0 },
     { A3, MIDI_TOM_HI,  0, 0, 0 },
     { A4, MIDI_KICK,    0, 0, 0 },
+    { A5, MIDI_TOM_LOW, 0, 0, 0 },
     { -1, 0,            0, 0, 0 } // terminator
 };
 
