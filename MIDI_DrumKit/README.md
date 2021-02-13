@@ -26,4 +26,4 @@ For a good VST Drum Kit, I recommend the free MT Power Drum Kit:
 
 Here is my low-cost setup:
 
-![alt text](low_cost_drumkit.jpg "Low-cost Drum Kit")
+![alt text](low_cost_drum_kit.jpg "Low-cost Drum Kit")
