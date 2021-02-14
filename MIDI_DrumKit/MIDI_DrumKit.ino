@@ -19,6 +19,7 @@
 
 //#define NO_MIDI // comment out for MIDI Output
 //#define DEBUG_PIEZO // comment out for piezo data logger
+//#define DEBUG_HIT // comment out for piezo hit info
 
 #define MIDI_CHANNEL  0x09 // GM Percussion on channel 10
 #define MIDI_NOTEON   0x90
@@ -43,7 +44,7 @@
   #define SEND_MIDI(x) Serial.write(x)
 #endif
 
-#define THRESHOLD 16
+#define THRESHOLD 20
 
 typedef struct
 {
@@ -175,6 +176,7 @@ void loop()
 void loop()
 {
     piezo_t *p = piezo;
+    static uint32_t start;
 
     while (p->pin >= 0)
     {
@@ -188,27 +190,36 @@ void loop()
 
             if (now >= p->t_on)
             {
-//              DEBUG("Hit: ");
-//              DEBUG(p->max);
-//              DEBUG("\n");
-
                 // map to 1..127 with optional compression/offset
                 //val = p->max / 8;
                 //val = (p->max - THRESHOLD) / 4 + 32;
-                val = p->max / 2;
+                val = (p->max - (THRESHOLD-2)) / 2;
                 if (val > 127)
                     val = 127;
                 if (val < 1)
                     val = 1;
+#ifndef DEBUG_HIT
                 sendNoteOn(p->key, val);
+#endif
                 p->t_on = 0;
+                p->t_off = now + 10000;
             }
         }
         else if (p->t_off) // not stopped yet
         {
-            if (now >= p->t_off)
+            if (val >= THRESHOLD)
+                p->t_off = now + 10000;
+            else if (now >= p->t_off)
             {
+#ifdef DEBUG_HIT
+                DEBUG("Hit: ");
+                DEBUG(p->max);
+                DEBUG(" for ");
+                DEBUG(now-start);
+                DEBUG("ns\n");
+#else
                 sendNoteOn(p->key, 0); // off
+#endif
                 p->t_off = 0;
             }
         }
@@ -217,8 +228,9 @@ void loop()
             if (val >= THRESHOLD)
             {
                 p->max   = val;
-                p->t_on  = now +  1000;
-                p->t_off = now + 50000;
+                start = now;
+                p->t_on  = now + 1000;
+                p->t_off = 0; // updated later
             }
         }
 
