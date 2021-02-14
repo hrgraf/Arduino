@@ -1,7 +1,7 @@
 /**
  * Arduino MIDI DrumKit by H.R.Graf
  *
- * Piezo to MIDI
+ * Piezo and Button to MIDI
  *
  * MIDI out either direct at 31250 baud over the serial interface, 
  * or over USB as virtual COM port at 115200 baud.
@@ -19,18 +19,22 @@
 
 //#define NO_MIDI // comment out for MIDI Output
 //#define DEBUG_PIEZO // comment out for piezo data logger
-//#define DEBUG_HIT // comment out for piezo hit info
+//#define DEBUG_HIT // comment out for piezo/button hit info
 
 #define MIDI_CHANNEL  0x09 // GM Percussion on channel 10
 #define MIDI_NOTEON   0x90
 
 // MT Power Drum Kit (VST DrumKit)
-#define MIDI_KICK       36
-#define MIDI_SNARE      38
-#define MIDI_TOM_LOW    41
-#define MIDI_TOM_MID    45
-#define MIDI_TOM_HI     48
-#define MIDI_HI_HAT     46
+#define MIDI_KICK           36
+#define MIDI_SNARE          38
+#define MIDI_TOM_LOW        41
+#define MIDI_TOM_MID        45
+#define MIDI_TOM_HI         48
+#define MIDI_CRASH_L        49
+#define MIDI_CRASH_R        57
+#define MIDI_HI_HAT_CLOSED  42
+#define MIDI_HI_HAT_OPEN    46
+#define MIDI_HI_HAT_PEDAL   65
 
 #ifdef NO_MIDI // Debug
   #define BAUD_RATE 115200
@@ -54,17 +58,34 @@ typedef struct
     uint32_t t_on, t_off; // in us
 } piezo_t;
 
+typedef struct
+{
+    int8_t   pin; // Arduino pin
+    uint8_t  key; // MIDI key
+    uint32_t t_on, t_off; // in us
+} button_t;
+
 // piezo configuration
 static piezo_t piezo[] =
 {
-    { A0, MIDI_HI_HAT,  0, 0, 0 },
-    { A1, MIDI_SNARE,   0, 0, 0 },
-    { A2, MIDI_TOM_MID, 0, 0, 0 },
-    { A3, MIDI_TOM_HI,  0, 0, 0 },
-    { A4, MIDI_KICK,    0, 0, 0 },
-    { A5, MIDI_TOM_LOW, 0, 0, 0 },
-    { -1, 0,            0, 0, 0 } // terminator
+    { A0, MIDI_HI_HAT_OPEN,   0, 0, 0 },
+    { A1, MIDI_CRASH_R,       0, 0, 0 },
+    { A2, MIDI_TOM_MID,       0, 0, 0 },
+    { A3, MIDI_TOM_HI,        0, 0, 0 },
+    { A4, MIDI_SNARE,         0, 0, 0 },
+    { A5, MIDI_TOM_LOW,       0, 0, 0 },
+    { -1, 0,                  0, 0, 0 } // terminator
 };
+
+// button (foot switch) configuration
+static button_t button[] =
+{
+    {  5, MIDI_HI_HAT_PEDAL,  0, 0 },
+    {  6, MIDI_KICK,          0, 0 },
+    { -1, 0,                  0, 0 } // terminator
+};
+
+static button_t *hi_hat_pedal = NULL; // for dynamic hi hat
 
 // -----------------------------------------------------------------------------
 
@@ -92,6 +113,15 @@ void setup()
     
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
+
+    button_t *b = button;
+    while (b->pin >= 0)
+    {
+        pinMode(b->pin, INPUT_PULLUP);
+        if (b->key == MIDI_HI_HAT_PEDAL)
+            hi_hat_pedal = b;
+        b++; // next button
+    }
 
     DEBUG("Ready\n");
 }
@@ -175,13 +205,14 @@ void loop()
 
 void loop()
 {
-    piezo_t *p = piezo;
     static uint32_t start;
+    uint32_t now = micros();
 
+    // handle piezos
+    piezo_t *p = piezo;
     while (p->pin >= 0)
     {
         int16_t  val = analogRead(p->pin);
-        uint32_t now = micros();
 
         if (p->t_on) // started
         {
@@ -190,6 +221,12 @@ void loop()
 
             if (now >= p->t_on)
             {
+                if (hi_hat_pedal) // dynamic hi hat key
+                { 
+                    if ((p->key == MIDI_HI_HAT_OPEN) || (p->key == MIDI_HI_HAT_CLOSED))
+                        p->key = (hi_hat_pedal->t_on ? MIDI_HI_HAT_OPEN : MIDI_HI_HAT_CLOSED);
+                }
+
                 // map to 1..127 with optional compression/offset
                 //val = p->max / 8;
                 //val = (p->max - THRESHOLD) / 4 + 32;
@@ -215,8 +252,8 @@ void loop()
                 DEBUG("Hit: ");
                 DEBUG(p->max);
                 DEBUG(" for ");
-                DEBUG(now-start);
-                DEBUG("ns\n");
+                DEBUG((now-start+500)/1000);
+                DEBUG("ms\n");
 #else
                 sendNoteOn(p->key, 0); // off
 #endif
@@ -235,6 +272,57 @@ void loop()
         }
 
         p++; // next piezo
+    }
+
+    // handle buttons
+    button_t *b = button;
+    while (b->pin >= 0)
+    {
+        int16_t  val = digitalRead(b->pin);
+
+        if (b->t_on) // started
+        {
+            if (! val) // pulled down
+                b->t_on = now + 10000;
+            else if (now >= b->t_on)
+            {
+                b->t_on = 0;
+                b->t_off = now + 10000;
+            }
+        }
+        else if (b->t_off) // not stopped yet
+        {
+            if (! val) // pulled down
+                b->t_off = now + 10000;
+            else if (now >= b->t_off)
+            {
+#ifdef DEBUG_HIT
+                DEBUG("Hit for ");
+                DEBUG((now-start+500)/1000);
+                DEBUG("ms\n");
+#else
+                sendNoteOn(b->key, 0); // off
+#endif
+                b->t_off = 0;
+            }
+        }
+        else // no activity
+        {
+            if (! val) // pulled down
+            {
+                start = now;
+                b->t_on  = now + 10000;
+                b->t_off = 0; // updated later
+
+                // map to 1..127 with optional compression/offset
+                val = 100;
+#ifndef DEBUG_HIT
+                sendNoteOn(b->key, val);
+#endif
+            }
+        }
+
+        b++; // next button
     }
 }
 
