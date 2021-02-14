@@ -224,7 +224,7 @@ void loop()
                 if (hi_hat_pedal) // dynamic hi hat key
                 { 
                     if ((p->key == MIDI_HI_HAT_OPEN) || (p->key == MIDI_HI_HAT_CLOSED))
-                        p->key = (hi_hat_pedal->t_on ? MIDI_HI_HAT_OPEN : MIDI_HI_HAT_CLOSED);
+                        p->key = (hi_hat_pedal->t_on ? MIDI_HI_HAT_CLOSED : MIDI_HI_HAT_OPEN);
                 }
 
                 // map to 1..127 with optional compression/offset
