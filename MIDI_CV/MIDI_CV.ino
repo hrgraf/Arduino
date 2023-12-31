@@ -48,6 +48,8 @@
   MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, CustomBaud);
 #endif
 
+#define GATE_OUT 12
+
 // -----------------------------------------------------------------------------
 
 void handleNoteOn(byte channel, byte key, byte velocity)
@@ -56,26 +58,32 @@ void handleNoteOn(byte channel, byte key, byte velocity)
     // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
 
     digitalWrite(LED_BLINK, velocity ? HIGH : LOW);
+    digitalWrite(GATE_OUT, velocity ? HIGH : LOW);
     MIDI.sendNoteOn(key+1, velocity, 2);
+/*  
     DEBUG("NoteOn: ");
     DEBUG(key);
     DEBUG(" @ ");
     DEBUG(velocity);
-    DEBUG("\n");
+    DEBUG("\n"); 
+*/
 }
 
 void handleNoteOff(byte channel, byte key, byte velocity)
 {
     // Do something when the note is released.
     // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
-
+    
     digitalWrite(LED_BLINK, LOW);
+    digitalWrite(GATE_OUT, LOW);
     MIDI.sendNoteOff(key+1, velocity, 2);
+/*  
     DEBUG("NoteOff: ");
     DEBUG(key);
     DEBUG(" @ ");
     DEBUG(velocity);
     DEBUG("\n");
+*/
 }
 
 // -----------------------------------------------------------------------------
@@ -88,6 +96,9 @@ void setup()
     pinMode(LED_BLINK, OUTPUT);
     digitalWrite(LED_BLINK, LOW);
 
+    pinMode(GATE_OUT, OUTPUT);
+    digitalWrite(GATE_OUT, LOW);
+    
     MIDI.setHandleNoteOn(handleNoteOn);
     MIDI.setHandleNoteOff(handleNoteOff);
     MIDI.begin(MIDI_CHANNEL_OMNI);
