@@ -1,11 +1,11 @@
 /**
- * Arduino MIDI Test by H.R.Graf
+ * Arduino MIDI CV by H.R.Graf
  *
  * Works out-of-the-box on Arduino Uno / Leonardo compatible boards.
  * No MIDI DIN circuit needed, as MIDI events are sent/received over USB.
  *
- * Received Note On/Off control built-in LED and are sent back on channel 2
- * with slight change in pitch (to demonstrate active functionality).
+ * Received Note On/Off control built-in LED and GATE_OUT, and creates
+ * pitch control voltage using DAC MCP4725 over I2C.
  *
  * On the Arduino Uno, the serial interface is used to send MIDI over USB
  * at 115200 baud. On the host (PC), the USB communication is accessible 
@@ -21,13 +21,19 @@
 
 #include <Arduino.h> // for Intellisense
 
-#define BAUD_RATE 115200
+#include "Wire.h"
+#include "MCP4725.h"
 
+#define BAUD_RATE 115200
+#define GATE_OUT 12 // pin
+#define PITCH_ADDR 0x60 // MCP4725 base addr
+#define BASE_KEY 36 // C2=C @ 65.41Hz
+ 
 #if defined(ARDUINO_AVR_LEONARDO)
   #define LED_BLINK LED_BUILTIN // 13
   //#define LED_BLINK 17 // RX LED on Pro Micro
   
-  #define DEBUG_INIT(x) Serial.begin(x)
+  #define DEBUG_INIT(x) { Serial.begin(x); while (!Serial) ; }
   #define DEBUG(x) Serial.print(x)
   
   #include <USB-MIDI.h>
@@ -48,7 +54,9 @@
   MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, CustomBaud);
 #endif
 
-#define GATE_OUT 12
+
+MCP4725 PITCH_OUT(PITCH_ADDR);
+bool has_pitch = false;
 
 // -----------------------------------------------------------------------------
 
@@ -57,16 +65,38 @@ void handleNoteOn(byte channel, byte key, byte velocity)
     // Do whatever you want when a note is pressed.
     // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
 
-    digitalWrite(LED_BLINK, velocity ? HIGH : LOW);
-    digitalWrite(GATE_OUT, velocity ? HIGH : LOW);
-    MIDI.sendNoteOn(key+1, velocity, 2);
-/*  
-    DEBUG("NoteOn: ");
-    DEBUG(key);
-    DEBUG(" @ ");
-    DEBUG(velocity);
-    DEBUG("\n"); 
+    if (velocity)
+    {
+      float voltage = 0.0;
+      
+      if (has_pitch)
+      {
+        voltage = (float)(key - BASE_KEY) * (1.0/12.0); // 1V per octave
+        if ((voltage < 0.0) || (voltage > 5.0))
+          return; // ignore key outside range
+        PITCH_OUT.setVoltage(voltage);
+      }
+/*
+      DEBUG("NoteOn: ");
+      DEBUG(key);
+      DEBUG(" @ ");
+      DEBUG(velocity);
+      if (has_pitch)
+      {
+        DEBUG(" : ");
+        DEBUG(voltage);
+        DEBUG(" V");
+      }
+      DEBUG("\n"); 
 */
+      digitalWrite(LED_BLINK, HIGH);
+      digitalWrite(GATE_OUT, HIGH);
+    }
+    else
+    {
+      digitalWrite(LED_BLINK, LOW);
+      digitalWrite(GATE_OUT, LOW);
+    }
 }
 
 void handleNoteOff(byte channel, byte key, byte velocity)
@@ -76,7 +106,6 @@ void handleNoteOff(byte channel, byte key, byte velocity)
     
     digitalWrite(LED_BLINK, LOW);
     digitalWrite(GATE_OUT, LOW);
-    MIDI.sendNoteOff(key+1, velocity, 2);
 /*  
     DEBUG("NoteOff: ");
     DEBUG(key);
@@ -91,20 +120,32 @@ void handleNoteOff(byte channel, byte key, byte velocity)
 void setup()
 {
     DEBUG_INIT(BAUD_RATE);
-    DEBUG("ArduMidiTest");
+    DEBUG("Midi_CV\n");
     
     pinMode(LED_BLINK, OUTPUT);
     digitalWrite(LED_BLINK, LOW);
 
     pinMode(GATE_OUT, OUTPUT);
     digitalWrite(GATE_OUT, LOW);
+
+    if (PITCH_OUT.begin())
+    {
+      DEBUG("Connected to PITCH_OUT DAC\n");
+      has_pitch = true;
+      PITCH_OUT.setMaxVoltage(5.0);
+      PITCH_OUT.setVoltage(0.0);
+    }
+    else
+    {
+      DEBUG("Could not find PITCH_OUT DAC\n");
+    }
     
     MIDI.setHandleNoteOn(handleNoteOn);
     MIDI.setHandleNoteOff(handleNoteOff);
     MIDI.begin(MIDI_CHANNEL_OMNI);
-    MIDI.turnThruOff();
+    MIDI.turnThruOn();
     
-    DEBUG("Ready");
+    DEBUG("Ready for MIDI notes\n");
 }
 
 void loop()
