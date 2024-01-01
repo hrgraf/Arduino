@@ -5,7 +5,7 @@
  * No MIDI DIN circuit needed, as MIDI events are sent/received over USB.
  *
  * Received Note On/Off control built-in LED and GATE_OUT, and creates
- * pitch control voltage using DAC MCP4725 over I2C.
+ * pitch control voltage (0..5V) using DAC MCP4725 over I2C.
  *
  * On the Arduino Uno, the serial interface is used to send MIDI over USB
  * at 115200 baud. On the host (PC), the USB communication is accessible 
@@ -57,6 +57,7 @@
 
 MCP4725 PITCH_OUT(PITCH_ADDR);
 bool has_pitch = false;
+float max_voltage = 5.13; // manually calibrated
 
 // -----------------------------------------------------------------------------
 
@@ -72,7 +73,7 @@ void handleNoteOn(byte channel, byte key, byte velocity)
       if (has_pitch)
       {
         voltage = (float)(key - BASE_KEY) * (1.0/12.0); // 1V per octave
-        if ((voltage < 0.0) || (voltage > 5.0))
+        if ((voltage < 0.0) || (voltage > max_voltage))
           return; // ignore key outside range
         PITCH_OUT.setVoltage(voltage);
       }
@@ -132,7 +133,7 @@ void setup()
     {
       DEBUG("Connected to PITCH_OUT DAC\n");
       has_pitch = true;
-      PITCH_OUT.setMaxVoltage(5.0);
+      PITCH_OUT.setMaxVoltage(max_voltage);
       PITCH_OUT.setVoltage(0.0);
     }
     else
