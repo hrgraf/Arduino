@@ -24,10 +24,11 @@
 #include "Wire.h"
 #include "MCP4725.h"
 
-#define BAUD_RATE 115200
-#define GATE_OUT 12 // pin
-#define PITCH_ADDR 0x60 // MCP4725 base addr
-#define BASE_KEY 36 // C2=C @ 65.41Hz
+#define BAUD_RATE 115200 // UART
+#define GATE_OUT      12 // pin
+#define PITCH_ADDR  0x60 // MCP4725 base addr
+#define MOD_ADDR    0x61 // MCP4725 alternative addr
+#define BASE_KEY      36 // C2=C @ 65.41Hz
  
 #if defined(ARDUINO_AVR_LEONARDO)
   #define LED_BLINK LED_BUILTIN // 13
@@ -54,11 +55,10 @@
   MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, CustomBaud);
 #endif
 
-
-MCP4725 PITCH_OUT(PITCH_ADDR);
-bool has_pitch = false;
-float max_voltage = 5.13; // manually calibrated
-float pitch_voltage = 0.0;
+MCP4725 PITCH_OUT(PITCH_ADDR), MOD_OUT(MOD_ADDR);
+static bool has_pitch = false, has_mod = false;
+static float max_voltage = 5.13; // manually calibrated
+static float pitch_voltage = 0.0;
 
 // -----------------------------------------------------------------------------
 
@@ -133,6 +133,22 @@ void handlePitchBend(byte channel, int bend)
 */
 }
 
+void handleControlChange(byte channel, byte number, byte value)
+{
+  if ((number == 1) && (has_mod))
+  {
+    float voltage =  (max_voltage*value) / 127;
+    MOD_OUT.setVoltage(voltage);
+  }
+/*
+    DEBUG("ControlChange: ");
+    DEBUG(number);
+    DEBUG(" : ");
+    DEBUG(value);
+    DEBUG("\n");
+*/
+}
+
 // -----------------------------------------------------------------------------
 
 void setup()
@@ -158,9 +174,22 @@ void setup()
       DEBUG("Could not find PITCH_OUT DAC\n");
     }
     
+    if (MOD_OUT.begin())
+    {
+      DEBUG("Connected to MOD_OUT DAC\n");
+      has_mod = true;
+      MOD_OUT.setMaxVoltage(max_voltage);
+      MOD_OUT.setVoltage(0.0);
+    }
+    else
+    {
+      DEBUG("Could not find MOD_OUT DAC\n");
+    }
+    
     MIDI.setHandleNoteOn(handleNoteOn);
     MIDI.setHandleNoteOff(handleNoteOff);
     MIDI.setHandlePitchBend(handlePitchBend);
+    MIDI.setHandleControlChange(handleControlChange);
     MIDI.begin(MIDI_CHANNEL_OMNI);
     MIDI.turnThruOn();
     
