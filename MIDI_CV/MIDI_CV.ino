@@ -58,6 +58,7 @@
 MCP4725 PITCH_OUT(PITCH_ADDR);
 bool has_pitch = false;
 float max_voltage = 5.13; // manually calibrated
+float pitch_voltage = 0.0;
 
 // -----------------------------------------------------------------------------
 
@@ -75,6 +76,7 @@ void handleNoteOn(byte channel, byte key, byte velocity)
         voltage = (float)(key - BASE_KEY) * (1.0/12.0); // 1V per octave
         if ((voltage < 0.0) || (voltage > max_voltage))
           return; // ignore key outside range
+        pitch_voltage = voltage;
         PITCH_OUT.setVoltage(voltage);
       }
 /*
@@ -116,6 +118,21 @@ void handleNoteOff(byte channel, byte key, byte velocity)
 */
 }
 
+void handlePitchBend(byte channel, int bend)
+{
+  float voltage = pitch_voltage;
+  voltage += (1.0*bend) / MIDI_PITCHBEND_MAX; // max. +-1V
+  PITCH_OUT.setVoltage(voltage);
+/*
+    DEBUG("PitchBend: ");
+    DEBUG(bend);
+    DEBUG(" : ");
+    DEBUG(voltage);
+    DEBUG(" V");
+    DEBUG("\n");
+*/
+}
+
 // -----------------------------------------------------------------------------
 
 void setup()
@@ -143,6 +160,7 @@ void setup()
     
     MIDI.setHandleNoteOn(handleNoteOn);
     MIDI.setHandleNoteOff(handleNoteOff);
+    MIDI.setHandlePitchBend(handlePitchBend);
     MIDI.begin(MIDI_CHANNEL_OMNI);
     MIDI.turnThruOn();
     
