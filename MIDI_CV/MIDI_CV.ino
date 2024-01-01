@@ -4,8 +4,11 @@
  * Works out-of-the-box on Arduino Uno / Leonardo compatible boards.
  * No MIDI DIN circuit needed, as MIDI events are sent/received over USB.
  *
- * Received Note On/Off control built-in LED and GATE_OUT, and creates
- * pitch control voltage (0..5V) using DAC MCP4725 over I2C.
+ * Received Note On/Off messages control built-in LED and GATE_OUT pin, 
+ * and creates a pitch control voltage (0..5V) using DAC MCP4725 over I2C.
+ * Received Pitch Bend messages alter the pitch control volatage additionally.
+ * Received Modulation Wheel (Control Change) messages create a mod control 
+ * voltage (0..5V) using a 2nd DAC MCP4725 over I2C.
  *
  * On the Arduino Uno, the serial interface is used to send MIDI over USB
  * at 115200 baud. On the host (PC), the USB communication is accessible 
