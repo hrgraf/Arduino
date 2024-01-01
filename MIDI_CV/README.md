@@ -22,3 +22,8 @@ between UART and MIDI. The baud rate of 115200 is compatible to both
 On the Arduino Leonardo, the USB MIDI functionality is built-in and the 
 serial interface is available for serial monitor / debug messages.
 No additional drivers needed on the host (PC) side.
+
+Here is a picture of the Arduino Leonardo with 2 MCP4725 DAC modules controlling 
+a Moog Werkstatt analog synthesizer by control voltages and gate signal:
+![alt text](werkstatt_leonardo_dac.jpg "Control a Moog Werkstatt analog synth")
+This is effectively adding a USB-MIDI interface to the analog synthesizer!
