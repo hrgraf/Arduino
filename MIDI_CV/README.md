@@ -1,4 +1,4 @@
-# Arduino MIDI to Gate/Control Voltage bridge.
+# Arduino MIDI to Gate/Control Voltage (CV) bridge
 
 Works out-of-the-box on Arduino Uno / Leonardo compatible boards.
 No MIDI DIN circuit needed, as MIDI events are sent/received over USB.
