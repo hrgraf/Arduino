@@ -28,5 +28,5 @@ a Moog Werkstatt analog synthesizer by control voltages and gate signal:
 ![alt text](werkstatt_leonardo_dac.jpg "Control a Moog Werkstatt analog synth")
 This is effectively adding a USB-MIDI interface to the analog synthesizer!
 
-Here is a schematics diagram of the setup:
+Here is a wiring diagram of the setup:
 ![alt text](Arduino_MCP4725_Wiring.png "Arduino Gate / CV Wiring")
