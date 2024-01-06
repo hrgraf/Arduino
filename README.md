@@ -1,5 +1,5 @@
 # Arduino
-Arduino experiments using PlatformIO and VisualStudio Code
+Arduino experiments on LED, IR, UART, MIDI, CV, Synth, using PlatformIO and VisualStudio Code
 
 ## PlatformIO
 
