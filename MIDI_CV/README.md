@@ -7,7 +7,7 @@ Functionality:
 - Received Note On/Off messages control built-in LED and GATE_OUT pin, 
 and create a pitch control voltage (0..5V) using DAC MCP4725 over I2C.
 (For common 1V/octave configurations, this covers 5 octaves.)
-- Received Pitch Bend messages alter the pitch control volatage additionally
+- Received Pitch Bend messages alter the pitch control voltage additionally
 (by +- 1V corresponding commonly to +- 1 octave)
 - Received Modulation Wheel (Control Change) messages create a mod control 
 voltage (0..5V) using a 2nd DAC MCP4725 over I2C.
@@ -29,4 +29,4 @@ a Moog Werkstatt analog synthesizer by control voltages and gate signal:
 This is effectively adding a USB-MIDI interface to the analog synthesizer!
 
 Here is a schematics diagram of the setup:
-![alt text](Arduino_MCP4725_Schematics.png "Arduino Gate / CV Schematics")
+![alt text](Arduino_MCP4725_Wiring.png "Arduino Gate / CV Wiring")
