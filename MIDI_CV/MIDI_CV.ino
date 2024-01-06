@@ -1,12 +1,13 @@
 /**
- * Arduino MIDI CV by H.R.Graf
+ * Arduino MIDI to Gate/Control Voltage (CV) bridge by H.R.Graf
+ * (Or how to add a USB-MIDI interface to an analog synthesizer)
  *
  * Works out-of-the-box on Arduino Uno / Leonardo compatible boards.
  * No MIDI DIN circuit needed, as MIDI events are sent/received over USB.
  *
  * Received Note On/Off messages control built-in LED and GATE_OUT pin, 
- * and creates a pitch control voltage (0..5V) using DAC MCP4725 over I2C.
- * Received Pitch Bend messages alter the pitch control volatage additionally.
+ * and create a pitch control voltage (0..5V) using DAC MCP4725 over I2C.
+ * Received Pitch Bend messages alter the pitch control voltage additionally.
  * Received Modulation Wheel (Control Change) messages create a mod control 
  * voltage (0..5V) using a 2nd DAC MCP4725 over I2C.
  *
