@@ -27,3 +27,6 @@ Here is a picture of the Arduino Leonardo with 2 MCP4725 DAC modules controlling
 a Moog Werkstatt analog synthesizer by control voltages and gate signal:
 ![alt text](werkstatt_leonardo_dac.jpg "Control a Moog Werkstatt analog synth")
 This is effectively adding a USB-MIDI interface to the analog synthesizer!
+
+Here is a schematics diagram of the setup:
+![alt text](Arduino_MCP4725.png "Arduino Gate / CV Schematics")
