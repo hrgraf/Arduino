@@ -21,13 +21,16 @@
 
 #include <Arduino.h> // for Intellisense
 
+#define CH_IN  MIDI_CHANNEL_OMNI
+#define CH_OUT 2
+
 #define BAUD_RATE 115200
 
 #if defined(ARDUINO_AVR_LEONARDO)
   #define LED_BLINK LED_BUILTIN // 13
   //#define LED_BLINK 17 // RX LED on Pro Micro
   
-  #define DEBUG_INIT(x) Serial.begin(x)
+  #define DEBUG_INIT(x) { Serial.begin(x); while (!Serial) ; }
   #define DEBUG(x) Serial.print(x)
   
   #include <USB-MIDI.h>
@@ -52,53 +55,65 @@
 
 void handleNoteOn(byte channel, byte key, byte velocity)
 {
-    // Do whatever you want when a note is pressed.
-    // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
-
-    digitalWrite(LED_BLINK, velocity ? HIGH : LOW);
-    MIDI.sendNoteOn(key+1, velocity, 2);
-    DEBUG("NoteOn: ");
-    DEBUG(key);
-    DEBUG(" @ ");
-    DEBUG(velocity);
-    DEBUG("\n");
+  // Do whatever you want when a note is pressed.
+  // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
+  digitalWrite(LED_BLINK, velocity ? HIGH : LOW);
+  MIDI.sendNoteOn(key+1, velocity, CH_OUT);
+  
+  DEBUG("NoteOn: ");
+  DEBUG(key);
+  DEBUG(" @ ");
+  DEBUG(velocity);
+  DEBUG("\n");
 }
 
 void handleNoteOff(byte channel, byte key, byte velocity)
 {
-    // Do something when the note is released.
-    // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
-
-    digitalWrite(LED_BLINK, LOW);
-    MIDI.sendNoteOff(key+1, velocity, 2);
-    DEBUG("NoteOff: ");
-    DEBUG(key);
-    DEBUG(" @ ");
-    DEBUG(velocity);
-    DEBUG("\n");
+  // Do something when the note is released.
+  // Note that NoteOn messages with 0 velocity are interpreted as NoteOffs.
+  digitalWrite(LED_BLINK, LOW);
+  MIDI.sendNoteOff(key+1, velocity, CH_OUT);
+  
+  DEBUG("NoteOff: ");
+  DEBUG(key);
+  DEBUG(" @ ");
+  DEBUG(velocity);
+  DEBUG("\n");
 }
 
 // -----------------------------------------------------------------------------
 
 void setup()
 {
-    DEBUG_INIT(BAUD_RATE);
-    DEBUG("ArduMidiTest");
-    
-    pinMode(LED_BLINK, OUTPUT);
-    digitalWrite(LED_BLINK, LOW);
+  DEBUG_INIT(BAUD_RATE);
+  DEBUG("Arduino MIDI Test\n");
+  
+  pinMode(LED_BLINK, OUTPUT);
+  digitalWrite(LED_BLINK, LOW);
 
-    MIDI.setHandleNoteOn(handleNoteOn);
-    MIDI.setHandleNoteOff(handleNoteOff);
-    MIDI.begin(MIDI_CHANNEL_OMNI);
-    MIDI.turnThruOff();
-    
-    DEBUG("Ready");
+  MIDI.setHandleNoteOn(handleNoteOn);
+  MIDI.setHandleNoteOff(handleNoteOff);
+  MIDI.begin(1); //MIDI_CHANNEL_OMNI);
+
+  if (CH_IN == MIDI_CHANNEL_OMNI)
+  {
+    DEBUG("Listening on all channels\n");
+  }
+  else
+  {
+    DEBUG("Listening on channel ");
+    DEBUG(CH_IN);
+    DEBUG("\n");
+  }
+
+  DEBUG("Output on channel ");
+  DEBUG(CH_OUT);
+  DEBUG("\n");
 }
 
 void loop()
 {
-    MIDI.read();
+  MIDI.read();
 }
 
 // -----------------------------------------------------------------------------
