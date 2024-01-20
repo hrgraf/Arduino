@@ -1,9 +1,9 @@
 /**
- * Arduino MIDI AN1x SysEx-To-CC Translator by H.R.Graf
+ * Arduino MIDI AN1x CC and SysEx Monitor by H.R.Graf
  *
  * Works out-of-the-box on Arduino Leonardo compatible boards.
  * No MIDI DIN circuit needed, as MIDI events are sent/received over USB.
- * Translates AN1x specific SysEx to Midi Control change.
+ * Parses AN1x SysEx messages (e.g. real-time parameter changes)
  * Passing thru standard MIDI messages.
  * Received Note On/Off control built-in LED.
  * The serial interface is used for monitor / debug messages.
@@ -80,25 +80,81 @@ static void OnPitchBend(byte channel, int bend)
 static void OnControlChange(byte channel, byte number, byte value) 
 {
   MIDI.sendControlChange(number, value, CH_OUT);
-  
-  DEBUG("ControlChange ");
-  DEBUG(number);
-  DEBUG(": ");
-  DEBUG(value);
-  DEBUG("\n");
+
+  static byte x=0, z=0;
+
+  if (number == 12)
+    z = value;
+  else if (number == 13)
+    x = value;
+    
+  if ((number == 12) || (number == 13))
+  {
+    DEBUG("Ribbon XZ: ");
+    DEBUG(x);
+    DEBUG(" - ");
+    DEBUG(z);
+    DEBUG("\n");
+  }
+  else
+  {
+    DEBUG("ControlChange ");
+    DEBUG(number);
+    DEBUG(": ");
+    DEBUG(value);
+    DEBUG("\n");
+  }
 }
 
-static void OnSystemExclusive(byte *data, unsigned length) {
-  DEBUG("SYSEX: (");
-  DEBUG(length);
-  DEBUG(" bytes) ");
-  for (uint16_t i = 0; i < length; i++)
+static void OnSystemExclusive(byte *data, unsigned length) 
+{
+  if ((length  >=    9         ) && 
+     ( data[0] == 0xF0         ) &&  // SysEx
+     ( data[1] == 0x43         ) &&  // Yamaha
+     ((data[2] & 0xF0) == 0x10 ) &&  // device number in lower nibble
+     ( data[3] == 0x5C         ) &&  // model number
+     ( data[length-1] == 0xF7  ) )   // End
   {
-    DEBUG2(data[i]>>4, HEX);
-    DEBUG2(data[i]&0xF, HEX);
+    int dev = data[2] & 0x0F;
+    int val = 0;
+    if (length == 9)
+      val = data[7];
+    else if (length == 10)
+      val = (data[7]<<7) | data[8];
+
+    if ((data[4] == 0x10) && (data[5] == 0x10)) // addr high & mid
+    {
+      int num = data[6] & 0x7F; // addr low
+
+      // won't implement SysEx-To-CC translation
+      // -> just select AN1x Control Change Mode 2 instead
+    }
+    
+    DEBUG("AN1x ");
+    DEBUG(dev);
+    DEBUG(" SysEx ");
+    DEBUG(data[4]); // addr high
     DEBUG(" ");
+    DEBUG(data[5]); // addr mid
+    DEBUG(" ");
+    DEBUG(data[6]); // addr low
+    DEBUG(": ");
+    DEBUG(val);
+    DEBUG("\n");
   }
-  DEBUG("\n");
+  else
+  {
+    DEBUG("SysEx: (");
+    DEBUG(length);
+    DEBUG(" bytes) ");
+    for (uint16_t i = 0; i < length; i++)
+    {
+      DEBUG2(data[i]>>4, HEX);
+      DEBUG2(data[i]&0xF, HEX);
+      DEBUG(" ");
+    }
+    DEBUG("\n");
+  }
 }
 
 static void OnProgramChange(byte channel, byte number) 
